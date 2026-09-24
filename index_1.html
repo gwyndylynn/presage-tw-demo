@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Presage Scanner Probe Demo</title>
+<meta name="theme-color" content="#007bff">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.2/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+body{background:#fff;color:#212529;padding:0 15px calc(40px + env(safe-area-inset-bottom,0px));-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+.page-title{text-align:center;font-size:17px;font-weight:500;margin:0;padding:calc(env(safe-area-inset-top,0px) + 30px) 0 6px;line-height:1.35}
+.navbtns{display:flex;gap:3px;position:relative}
+.navbtns>.btn,.navbtns>.dd>.btn{font-size:19px;padding:8px 12px;border-radius:3px;display:flex;align-items:center;justify-content:center;gap:16px;width:100%}
+.navbtns>*{flex:1;min-width:0}
+.navbtns .ico-left{margin-right:auto}
+.navbtns .lbl{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.navbtns .btn{position:relative;min-height:43px}
+.dd{position:relative}
+.dd-menu{position:absolute;right:0;top:calc(100% + 2px);z-index:20;min-width:240px;background:#fff;border:1px solid rgba(0,0,0,.15);border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.15);padding:6px 0}
+.dd-menu button{display:block;width:100%;text-align:left;background:none;border:0;padding:10px 16px;font-size:16px}
+.dd-menu button:hover,.dd-menu button:focus{background:#f1f3f5}
+.dd-menu .divider{height:1px;background:#e9ecef;margin:6px 0}
+.dd-menu.left{left:0;right:auto}
+
+.probe-strip{min-height:44px;display:flex;align-items:center;gap:8px;font-size:13px;color:#6c757d;padding:8px 0}
+.probe-strip .dot{width:8px;height:8px;border-radius:50%;background:#adb5bd;flex:none}
+.probe-strip[data-s="on"] .dot{background:#28a745}
+.probe-strip[data-s="sim"] .dot{background:#ffc107}
+.probe-strip[data-s="lost"] .dot{background:#dc3545}
+.probe-strip[data-s="connecting"] .dot{background:#17a2b8}
+
+/* work order list */
+.wo-bar{background:#17a2b8;color:#fff;font-size:19px;font-weight:600;padding:10px 18px;border-radius:3px;margin:14px 0;border:0;width:100%;text-align:left}
+.wo-details{border:1px solid #dee2e6;border-radius:3px;padding:10px 14px;margin:-8px 0 14px;font-size:14px}
+.wo-details dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0}
+.wo-details dt{font-weight:600}.wo-details dd{margin:0}
+.tabs-wrap{border:1px solid #dee2e6;border-radius:3px}
+.tabs-wrap .nav-tabs{background:#f7f7f7;padding:8px 8px 0}
+.tabs-wrap .nav-link{font-size:14px;cursor:pointer}
+.tabs-wrap .badge{background:#17a2b8;color:#fff;border-radius:10px}
+.tab-body{padding:16px 18px}
+.tab-body h3{font-size:23px;font-weight:500;margin:0 0 6px}
+.srow{display:block;width:100%;text-align:left;border:1px solid #d6d6d6;border-top:0;background:#fff;padding:8px 4px 8px;font-size:14px;line-height:1.55;position:relative;color:inherit}
+.srow:first-of-type{border-top:1px solid #d6d6d6}
+.srow:nth-of-type(odd){background:#d3d3d3}
+.srow .sid{position:absolute;right:120px;top:8px}
+.srow .st{color:green}
+.srow .sched{margin-top:8px}
+.srow .tmp.ok{color:#1e7e34;font-weight:600}.srow .tmp.bad{color:#dc3545;font-weight:600}
+@media (max-width:560px){.srow .sid{right:10px}}
+.add-analysis{border:1px solid #dee2e6;border-radius:3px;margin-top:16px}
+.add-analysis .hd{background:#868e96;color:#fff;padding:12px 18px;font-size:14px}
+.add-analysis .bd{padding:16px 18px}
+
+/* sample screen */
+.form-group>label{font-size:14px;margin-bottom:4px}
+.input-group .btn-primary.sq{min-width:38px}
+.opt{border:1px solid #dee2e6;border-radius:3px;margin-bottom:16px;overflow:hidden;border-left:3px solid #dee2e6}
+.opt .hd{background:#f7f7f7;padding:10px 16px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #dee2e6}
+.opt .hd .spec{margin-left:auto;font-weight:400;color:#6c757d;font-size:12.5px}
+.opt .hd .fa-floppy-o{display:none}
+.opt.saved{border-left-color:#28a745}.opt.saved .hd .fa-floppy-o{display:inline-block}
+.opt.bad{border-left-color:#dc3545}.opt.bad .hd .fa-floppy-o{display:inline-block}
+.opt .input-group{flex-wrap:nowrap}
+.opt .state{width:56px;flex:none;background:#868e96;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px}
+.opt.saved .state{background:#28a745}.opt.bad .state{background:#dc3545}
+.opt .state .fa{display:none}
+.opt.saved .state .fa-check,.opt.bad .state .fa-exclamation{display:inline-block}
+.opt .form-control{border-radius:0;height:44px;font-size:17px;border-top:0;border-bottom:0;min-width:0}
+.opt .btn-now{border-radius:0;font-size:17px;padding:0 16px;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.opt .unit{display:flex;align-items:center;padding:0 12px;background:#e9ecef;color:#495057;font-size:15px;border-left:1px solid #ced4da}
+.opt .src{font-size:12.5px;color:#6c757d;padding:6px 16px;border-top:1px solid #dee2e6;background:#fcfcfc}
+.opt.bad .src .oos{color:#dc3545;font-weight:600}
+textarea.form-control{min-height:56px}
+
+/* modal */
+.mback{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center;padding:16px}
+@media (min-width:600px){.mback{align-items:center}}
+.mbox{background:#fff;border-radius:6px;width:100%;max-width:460px;box-shadow:0 10px 30px rgba(0,0,0,.3);margin-bottom:env(safe-area-inset-bottom,0px)}
+.mbox .mh{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #dee2e6}
+.mbox .mh h5{margin:0;font-size:18px}
+.mbox .mb{padding:16px}
+.mbox .mf{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #dee2e6}
+.mbox .mf .btn{flex:1;min-height:46px;font-size:16px}
+.reading{text-align:center;padding:6px 0 2px}
+.reading .ctx{font-size:13px;color:#6c757d}
+.reading .v{font-size:64px;font-weight:700;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.reading .v small{font-size:26px;color:#6c757d;font-weight:500}
+.reading.ok .v{color:#1e7e34}.reading.bad .v{color:#dc3545}
+.reading .verdict{display:inline-block;font-weight:700;font-size:12px;letter-spacing:.08em;padding:4px 10px;border-radius:4px;background:#e9ecef;color:#6c757d;margin-top:4px}
+.reading.ok .verdict{background:#d4edda;color:#155724}.reading.bad .verdict{background:#f8d7da;color:#721c24}
+.mb .hint{font-size:13px;color:#6c757d;margin:12px 0 0;text-align:center}
+.connect-opts{display:grid;gap:8px}
+.connect-opts .btn{min-height:46px;font-size:16px}
+.tips{font-size:12.5px;color:#6c757d;margin:14px 0 0;padding-left:18px}
+.tips li{margin-bottom:4px}
+.spin{display:inline-block;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.pulse{animation:pl .5s}@keyframes pl{0%{transform:scale(1.05)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){.spin,.pulse{animation:none}}
+
+.toast2{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#343a40;color:#fff;padding:10px 16px;border-radius:6px;font-size:15px;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:60}
+.demo-note{font-size:12px;color:#adb5bd;text-align:center;margin-top:24px}
+</style>
+</head>
+<body>
+
+<!-- ============ WORK ORDER (list) ============ -->
+<section id="vList">
+  <h1 class="page-title">Work Order 2359</h1>
+  <div class="navbtns">
+    <button class="btn btn-primary" id="btnDone"><i class="fa fa-arrow-left ico-left"></i><span class="lbl">Done</span></button>
+    <div class="dd">
+      <button class="btn btn-primary" data-menu="menuList"><i class="fa fa-bars"></i><span>Menu</span></button>
+      <div class="dd-menu" id="menuList" hidden></div>
+    </div>
+  </div>
+
+  <button class="wo-bar" id="woToggle"><i class="fa fa-plus-square"></i> WO 2359 Details [Open]</button>
+  <div class="wo-details" id="woDetails" hidden>
+    <dl><dt>Plant</dt><dd>LNK</dd><dt>Type</dt><dd>Environmental Monitoring</dd><dt>Due</dt><dd id="woDue"></dd><dt>Assigned To</dt><dd>QA Tech</dd></dl>
+  </div>
+
+  <div class="form-group">
+    <label for="batch">Product Batch:</label>
+    <div class="input-group">
+      <select class="custom-select" id="batch" style="height:44px;font-size:18px"><option>None</option></select>
+      <div class="input-group-append"><button class="btn btn-primary sq" style="width:48px"><i class="fa fa-search"></i></button></div>
+    </div>
+  </div>
+
+  <div class="probe-strip" data-probe-strip></div>
+
+  <div class="tabs-wrap">
+    <ul class="nav nav-tabs">
+      <li class="nav-item"><a class="nav-link active" data-tab="samples">Samples <span class="badge" id="sampleCount">4</span></a></li>
+      <li class="nav-item"><a class="nav-link" data-tab="recipes">Recipes <span class="badge">0</span></a></li>
+    </ul>
+    <div class="tab-body" id="tabSamples">
+      <h3 id="showing">Showing 4 of 4</h3>
+      <div id="sampleList"></div>
+      <div class="add-analysis">
+        <div class="hd">Add Analysis</div>
+        <div class="bd">
+          <div class="form-group"><label for="aa1">Analysis:</label>
+            <div class="input-group"><select class="custom-select" id="aa1" style="height:44px;font-size:18px"><option>(Choose Analysis)</option><option>Micro Testing</option><option>ATP Swab</option></select>
+            <div class="input-group-append"><button class="btn btn-primary sq" style="width:48px"><i class="fa fa-search"></i></button></div></div></div>
+          <div class="form-group mb-0"><label for="aa2">Location:</label>
+            <div class="input-group"><select class="custom-select" id="aa2" style="height:44px;font-size:18px"><option>(Choose Location)</option><option>ENV-Room-B-14</option></select>
+            <div class="input-group-append"><button class="btn btn-primary sq" style="width:48px"><i class="fa fa-search"></i></button></div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-body" id="tabRecipes" hidden><h3>Showing 0 of 0</h3><p class="text-muted mb-0">No recipes on this work order.</p></div>
+  </div>
+  <p class="demo-note">Prototype for demonstration · data stays in this browser</p>
+</section>
+
+<!-- ============ SAMPLE ============ -->
+<section id="vSample" hidden>
+  <h1 class="page-title" id="sTitle"></h1>
+  <div class="navbtns">
+    <button class="btn btn-primary" id="btnSave"><i class="fa fa-check-square-o ico-left"></i><span class="lbl">Save</span><i class="fa fa-caret-down" style="margin-left:auto;font-size:14px"></i></button>
+    <div class="dd">
+      <button class="btn btn-primary" data-menu="menuSample"><i class="fa fa-bars"></i><span>Menu</span></button>
+      <div class="dd-menu" id="menuSample" hidden></div>
+    </div>
+  </div>
+
+  <div class="probe-strip" data-probe-strip></div>
+
+  <div class="form-group">
+    <label for="fLoc">Location:</label>
+    <div class="input-group"><select class="custom-select" id="fLoc"></select>
+    <div class="input-group-append"><button class="btn btn-primary sq"><i class="fa fa-search"></i></button></div></div>
+  </div>
+  <div class="form-group">
+    <label for="fSup">Supplier:</label>
+    <div class="input-group"><select class="custom-select" id="fSup"><option></option></select>
+    <div class="input-group-append"><button class="btn btn-primary sq"><i class="fa fa-search"></i></button></div></div>
+  </div>
+  <div class="form-group">
+    <label for="fProd">Product/Ingredient:</label>
+    <div class="input-group"><select class="custom-select" id="fProd"><option></option></select>
+    <div class="input-group-append"><button class="btn btn-primary sq"><i class="fa fa-search"></i></button></div></div>
+  </div>
+  <div class="form-group">
+    <label for="fComments">Comments:</label>
+    <textarea class="form-control" id="fComments" rows="2"></textarea>
+  </div>
+
+  <div id="options"></div>
+</section>
+
+<!-- ============ THERMOMETER MODAL ============ -->
+<div class="mback" id="modal" hidden>
+  <div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="mh"><h5 id="mTitle"><i class="fa fa-thermometer-half"></i> Temp at Time of Sample</h5>
+      <button class="close" id="mClose" aria-label="Close">&times;</button></div>
+    <div class="mb" id="mBody"></div>
+    <div class="mf" id="mFoot"></div>
+  </div>
+</div>
+
+<div class="toast2" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+'use strict';
+// ================= ETI GATT spec (Thermapen ONE Blue, 2023) =================
+const SVC = '45544942-4c55-4554-4845-524db87ad700';
+const CH = k => '45544942-4c55-4554-4845-524db87ad7' + k;
+const UUID = { s1: CH('01'), cmd: CH('05'), inst: CH('09'), ed2: CH('0c'), text: CH('0d') };
+const ETI_COMPANY = 0x0376;
+const CMD = { MEASURE: 0x0010, IDENTIFY: 0x0020 };
+const OPT_SVCS = [SVC, 'battery_service', 'device_information'];
+
+// ================= demo data =================
+const SPEC = { lo: 33, hi: 41 }; // °F, cold room
+const today = new Date();
+const ymd = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+const BASE = [
+  { id:12746, loc:'ENV-Room-B-14', hour:1 },
+  { id:12747, loc:'ENV-Room-C-15', hour:2 },
+  { id:12748, loc:'ENV-Room-A-4',  hour:3 },
+  { id:12749, loc:'ENV-Room-E-17', hour:4 }
+];
+const ANALYSIS = 'Micro Testing';
+const FIELDS = [
+  { key:'dt',     label:'Date/Time',             type:'datetime', now:true },
+  { key:'plated', label:'Plated Date/Time',      type:'datetime', now:true },
+  { key:'temp',   label:'Temp at Time of Sample',type:'temp' },
+  { key:'ecoli',  label:'E. Coli',               type:'number' },
+  { key:'hpc',    label:'HPC',                   type:'number' }
+];
+
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d){ try { const v = localStorage.getItem('psd.'+k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v){ try { localStorage.setItem('psd.'+k, JSON.stringify(v)); } catch {} }
+};
+let DATA = store.get('data', {}); // { [sampleId]: { comments, dt, plated, temp, tempMeta, ecoli, hpc } }
+const saveData = () => store.set('data', DATA);
+
+const S = { mode:'none', device:null, ch:{}, batt:null, info:{}, lastC:null, lastAt:null,
+            pending:null, pendTimer:null, enhanced:false, interval:null, simTimer:null, simC:null,
+            current:null, draft:null, modalOpen:false, modalState:'reading', wake:null };
+
+// ================= helpers =================
+const cToF = c => c * 9 / 5 + 32, fToC = f => (f - 32) * 5 / 9;
+const roundAway = (x, d=1) => { const m = 10 ** d; return Math.sign(x) * Math.round(Math.abs(x) * m) / m; };
+const f1 = x => roundAway(x, 1).toFixed(1);
+const inSpec = f => f >= SPEC.lo && f <= SPEC.hi;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const pad = n => String(n).padStart(2, '0');
+const localDT = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const hhmm12 = h => `${pad(h % 12 || 12)}:00 ${h < 12 ? 'AM' : 'PM'}`;
+const timeStr = d => d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit', second:'2-digit' });
+let toastT;
+function toast(m){ const el = $('toast'); el.textContent = m; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 3200); }
+let q = Promise.resolve();
+const gatt = fn => { const p = q.then(fn, fn); q = p.catch(() => {}); return p; };
+const u16 = v => { const b = new DataView(new ArrayBuffer(2)); b.setUint16(0, v, true); return b.buffer; };
+const write = (ch, buf) => ch.writeValueWithResponse ? ch.writeValueWithResponse(buf) : ch.writeValue(buf);
+const btOK = () => 'bluetooth' in navigator && window.isSecureContext;
+
+// ================= list view =================
+function renderList(){
+  $('sampleList').innerHTML = BASE.map(s => {
+    const d = DATA[s.id] || {};
+    const t = d.temp != null && d.temp !== '' ? Number(d.temp) : null;
+    return `<button class="srow" data-id="${s.id}">
+      <b>${esc(ANALYSIS)}</b><span class="sid">${s.id}</span><br>
+      ${esc(s.loc)}<br>
+      <span class="st">Open</span>
+      ${t != null ? `<br><span class="tmp ${inSpec(t) ? 'ok' : 'bad'}">Temp at Time of Sample: ${f1(t)} °F${inSpec(t) ? '' : ' (out of spec)'}</span>` : ''}
+      <div class="sched">Scheduled: ${ymd} ${hhmm12(s.hour)}</div>
+    </button>`;
+  }).join('');
+  $('woDue').textContent = ymd + ' 05:00 PM';
+}
+
+// ================= sample view =================
+function openSample(id, push = true){
+  const s = BASE.find(x => x.id === id); if (!s) return;
+  S.current = s;
+  const saved = DATA[id] || {};
+  S.draft = { comments:'', dt: localDT(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 8, 25)), plated:'', temp:'', tempMeta:null, ecoli:'', hpc:'', ...saved };
+  $('sTitle').textContent = `Analysis: ${ANALYSIS} Plant: LNK Location: ${s.loc} Sample: ${s.id} Status: Open`;
+  $('fLoc').innerHTML = BASE.map(b => `<option ${b.id === id ? 'selected' : ''}>${esc(b.loc)}</option>`).join('');
+  $('fComments').value = S.draft.comments || '';
+  renderOptions();
+  $('vList').hidden = true; $('vSample').hidden = false; window.scrollTo(0, 0);
+  if (push) history.pushState({ sample: id }, '', '#sample-' + id);
+}
+function showList(){ S.current = null; closeModal(); $('vSample').hidden = true; $('vList').hidden = false; renderList(); }
+
+function optState(f){
+  const v = S.draft[f.key];
+  if (v == null || v === '') return '';
+  if (f.type === 'temp') return inSpec(Number(v)) ? 'saved' : 'bad';
+  return 'saved';
+}
+function renderOptions(){
+  $('options').innerHTML = FIELDS.map(f => {
+    const v = S.draft[f.key] ?? '';
+    const st = optState(f);
+    let input, right = '', extra = '', spec = '';
+    if (f.type === 'datetime') {
+      input = `<input type="datetime-local" class="form-control" id="o_${f.key}" data-key="${f.key}" value="${esc(v)}">`;
+      right = `<button class="btn btn-primary btn-now" data-now="${f.key}"><i class="fa fa-clock-o"></i> Now</button>`;
+    } else if (f.type === 'temp') {
+      input = `<input type="number" inputmode="decimal" step="0.1" class="form-control" id="o_temp" data-key="temp" placeholder="###.###" value="${esc(v)}">`;
+      right = `<span class="unit">°F</span><button class="btn btn-primary btn-now" id="btnProbe" aria-label="Read from thermometer"><i class="fa fa-thermometer-half"></i> Probe</button>`;
+      spec = `<span class="spec">Spec ${f1(SPEC.lo)} – ${f1(SPEC.hi)}</span>`;
+      const m = S.draft.tempMeta;
+      if (v !== '') extra = `<div class="src">${m ? `From ${esc(m.probe)} at ${esc(m.time)} (${esc(m.how)})` : 'Entered by hand'}${inSpec(Number(v)) ? '' : ' · <span class="oos">Out of spec</span>'}</div>`;
+    } else {
+      input = `<input type="number" inputmode="decimal" class="form-control" id="o_${f.key}" data-key="${f.key}" placeholder="###.###" value="${esc(v)}">`;
+    }
+    return `<div class="opt ${st}" id="opt_${f.key}">
+      <div class="hd"><i class="fa fa-floppy-o"></i> ${esc(f.label)}${f.key === 'temp' ? '' : ''} ${spec}</div>
+      <div class="input-group"><div class="state"><i class="fa fa-check"></i><i class="fa fa-exclamation"></i></div>${input}${right}</div>
+      ${extra}
+    </div>`;
+  }).join('');
+}
+
+function setTemp(f, meta){
+  S.draft.temp = f1(f); S.draft.tempMeta = meta;
+  renderOptions();
+  const el = $('opt_temp'); el.classList.add('pulse'); setTimeout(() => el.classList.remove('pulse'), 600);
+  el.scrollIntoView({ block:'center', behavior:'smooth' });
+  toast(`Temp at Time of Sample: ${f1(f)} °F ${inSpec(f) ? '· in spec' : '· OUT OF SPEC'}`);
+  if (navigator.vibrate) try { navigator.vibrate(inSpec(f) ? 60 : [80,60,80]); } catch {}
+}
+
+function saveSample(){
+  if (!S.current) return;
+  S.draft.comments = $('fComments').value;
+  DATA[S.current.id] = { ...S.draft }; saveData();
+  toast(`Sample ${S.current.id} saved`);
+  if (history.state && history.state.sample) history.back(); else showList();
+}
+
+// ================= probe strip & menus =================
+function renderProbe(){
+  const map = { none:['', 'No thermometer connected'], connecting:['connecting','Connecting to thermometer…'],
+    ble:['on', `${S.info.name || 'Thermapen'} connected${S.batt != null ? ' · Battery ' + S.batt + '%' : ''}`],
+    sim:['sim', 'Simulated thermometer connected'], lost:['lost', 'Thermometer disconnected. Tap Probe to reconnect.'] };
+  const [s, txt] = map[S.mode] || map.none;
+  document.querySelectorAll('[data-probe-strip]').forEach(el => {
+    el.dataset.s = s; el.innerHTML = `<span class="dot"></span><i class="fa fa-thermometer-half"></i> <span>${esc(txt)}</span>`;
+  });
+  const items = [];
+  if (S.mode === 'ble') items.push(['identify','<i class="fa fa-lightbulb-o fa-fw"></i> Identify thermometer'], ['live', `<i class="fa fa-refresh fa-fw"></i> ${S.interval ? 'Probe: send on button press only' : 'Probe: send readings every second'}`], ['disconnect','<i class="fa fa-chain-broken fa-fw"></i> Disconnect thermometer']);
+  else if (S.mode === 'sim') items.push(['stopsim','<i class="fa fa-stop fa-fw"></i> Stop simulated thermometer']);
+  else { items.push(['connect','<i class="fa fa-bluetooth-b fa-fw"></i> Connect thermometer']); items.push(['sim','<i class="fa fa-flask fa-fw"></i> Use simulated thermometer']); }
+  items.push(['div'], ['reset','<i class="fa fa-undo fa-fw"></i> Reset demo data']);
+  const html = items.map(([k, l]) => k === 'div' ? '<div class="divider"></div>' : `<button data-act="${k}">${l}</button>`).join('');
+  $('menuList').innerHTML = html; $('menuSample').innerHTML = html;
+  if (S.modalOpen) renderModal();
+}
+
+// ================= modal =================
+function openModal(){
+  S.modalOpen = true; $('modal').hidden = false;
+  if (S.mode === 'ble' || S.mode === 'sim') { S.modalState = 'reading'; pushToProbe(); }
+  else if (S.mode === 'lost' && S.device) { S.modalState = 'connecting'; reconnect(); }
+  else if (btOK()) { S.modalState = 'connecting'; connect(); }   // called inside the tap, so Chrome's picker can open
+  else S.modalState = 'choose';
+  renderModal();
+}
+function closeModal(){ S.modalOpen = false; $('modal').hidden = true; S.pending = null; }
+
+function renderModal(){
+  const b = $('mBody'), f = $('mFoot');
+  const loc = S.current ? S.current.loc : '';
+  if (S.modalState === 'connecting' || S.mode === 'connecting') {
+    b.innerHTML = `<div class="text-center py-4"><i class="fa fa-circle-o-notch spin fa-2x text-primary"></i><p class="mt-3 mb-0">Choose your Thermapen in the list Chrome shows.</p></div>`;
+    f.innerHTML = `<button class="btn btn-outline-secondary" data-m="cancel">Cancel</button>`; return;
+  }
+  if (S.mode === 'ble' || S.mode === 'sim') {
+    const has = S.lastC != null && !Number.isNaN(S.lastC);
+    const fv = has ? cToF(S.lastC) : null;
+    const cls = has ? (inSpec(fv) ? 'ok' : 'bad') : '';
+    b.innerHTML = `<div class="reading ${cls}" id="rd">
+        <div class="ctx">${esc(loc)} · spec ${f1(SPEC.lo)} – ${f1(SPEC.hi)} °F</div>
+        <div class="v">${has ? f1(fv) : (S.lastC !== null && Number.isNaN(S.lastC) ? 'ERR' : '--.-')}<small> °F</small></div>
+        <span class="verdict">${has ? (inSpec(fv) ? 'IN SPEC' : 'OUT OF SPEC') : 'WAITING FOR READING'}</span>
+      </div>
+      <p class="hint">${S.mode === 'sim' ? 'Simulated thermometer. Tap Use reading to record it.' : 'Press the button on the Thermapen to record, or tap Use reading.'}${S.mode === 'ble' && S.enhanced ? '<br>The probe screen shows this location and PASS/FAIL.' : ''}</p>`;
+    f.innerHTML = `<button class="btn btn-outline-secondary" data-m="cancel">Cancel</button><button class="btn btn-primary" data-m="use" ${has ? '' : 'disabled'}>Use ${has ? f1(fv) + ' °F' : 'reading'}</button>`;
+    return;
+  }
+  // choose / no connection
+  const no = !btOK();
+  b.innerHTML = `<div class="connect-opts">
+      ${no ? `<div class="alert alert-warning mb-1" style="font-size:14px">${window.isSecureContext ? "This browser can't connect to Bluetooth thermometers. Use Chrome on Android, or Chrome or Edge on a computer." : 'Bluetooth needs this page to be opened from an https:// address.'}</div>` : `
+      <button class="btn btn-primary" data-m="connect"><i class="fa fa-bluetooth-b"></i> Connect Thermapen</button>
+      <button class="btn btn-outline-primary" data-m="all">Show all Bluetooth devices</button>`}
+      <button class="btn btn-outline-secondary" data-m="sim"><i class="fa fa-flask"></i> Use simulated thermometer</button>
+    </div>
+    <ul class="tips">
+      <li>Don't pair the probe in Bluetooth settings. Chrome connects to it directly.</li>
+      <li>Wake the Thermapen and close the ThermoWorks app. The probe allows one connection at a time.</li>
+      <li>On Android, turn on Bluetooth and Location, and allow "Nearby devices" for Chrome.</li>
+    </ul>`;
+  f.innerHTML = `<button class="btn btn-outline-secondary" data-m="cancel">Cancel</button>`;
+}
+function modalReadingUpdate(){
+  if (!S.modalOpen || S.modalState !== 'reading') return;
+  renderModal(); const r = $('rd'); if (r) { r.classList.add('pulse'); }
+}
+
+function captureFromProbe(how){
+  if (S.lastC == null || Number.isNaN(S.lastC)) { toast('No valid reading from the thermometer'); return; }
+  if (!S.current) { toast('Open a sample first to record a temperature'); return; }
+  setTemp(cToF(S.lastC), { probe: S.mode === 'sim' ? 'simulated thermometer' : `Thermapen ${S.info.serial || S.info.name || ''}`.trim(), time: timeStr(new Date()), how });
+  closeModal();
+}
+async function useReading(){
+  if (S.mode === 'sim') { captureFromProbe('tapped Use reading'); return; }
+  const fresh = S.lastAt && (Date.now() - S.lastAt.getTime() < 3000);
+  if (fresh) { captureFromProbe('tapped Use reading'); return; }
+  S.pending = 'tapped Use reading'; clearTimeout(S.pendTimer);
+  S.pendTimer = setTimeout(() => { if (S.pending) { S.pending = null; captureFromProbe('tapped Use reading'); } }, 2500);
+  try { await gatt(() => write(S.ch.cmd, u16(CMD.MEASURE))); } catch {}
+}
+
+// ================= readings =================
+function onReading(c){
+  S.lastC = c; S.lastAt = new Date();
+  modalReadingUpdate();
+  if (S.pending) { const how = S.pending; S.pending = null; clearTimeout(S.pendTimer); captureFromProbe(how); }
+}
+function parseReading(dv){ if (dv.byteLength < 4) return null; if (dv.getUint32(0, true) === 0xFFFFFFFF) return NaN; return dv.getFloat32(0, true); }
+function onCommand(ev){
+  const code = ev.target.value.getUint16(0, true);
+  if (code === 0x0001) { // probe button pressed; the reading follows
+    if (!S.current) { toast('Open a sample, then press the probe button'); return; }
+    S.pending = 'pressed probe button'; clearTimeout(S.pendTimer);
+    S.pendTimer = setTimeout(() => { if (S.pending) { S.pending = null; captureFromProbe('pressed probe button'); } }, 2500);
+  }
+  else if (code === 0x0002) toast('Thermometer is shutting down');
+  else if (code === 0x0003) toast('The thermometer rejected a setting');
+  else if (code === 0x0005) gatt(() => S.ch.s1.readValue()).then(dv => { const c = parseReading(dv); if (c !== null) onReading(c); }).catch(() => {});
+}
+
+// Send location + spec limits to a Thermapen ONE so it shows PASS/FAIL on its own screen.
+async function pushToProbe(){
+  if (S.mode !== 'ble' || !S.enhanced) return;
+  const text = (S.current ? S.current.loc : 'PRESAGE').toUpperCase().slice(0, 20);
+  try {
+    await gatt(async () => {
+      const t = new Uint8Array(20).fill(0x20);
+      for (let i = 0; i < text.length; i++) { const c = text.charCodeAt(i); t[i] = c < 256 ? c : 0x3F; }
+      await write(S.ch.text, t.buffer);
+      const cur = await S.ch.ed2.readValue();
+      const out = new DataView(new ArrayBuffer(Math.max(cur.byteLength, 10)));
+      for (let i = 0; i < cur.byteLength; i++) out.setUint8(i, cur.getUint8(i));
+      out.setUint8(0, 0x01); out.setUint8(1, 0x03);
+      out.setFloat32(2, fToC(SPEC.hi), true); out.setFloat32(6, fToC(SPEC.lo), true);
+      await write(S.ch.ed2, out.buffer);
+    });
+  } catch (err) { console.warn('probe display', err); }
+}
+
+// ================= Bluetooth connection =================
+async function setupGatt(){
+  S.mode = 'connecting'; renderProbe();
+  const dev = S.device;
+  const server = await dev.gatt.connect();
+  const svc = await server.getPrimaryService(SVC);
+  S.ch = {};
+  for (const [k, u] of Object.entries(UUID)) { try { S.ch[k] = await svc.getCharacteristic(u); } catch {} }
+  if (!S.ch.s1) throw new Error('This device is not an ETI thermometer.');
+  S.enhanced = !!(S.ch.ed2 && S.ch.text);
+  S.ch.s1.addEventListener('characteristicvaluechanged', ev => { const c = parseReading(ev.target.value); if (c !== null) onReading(c); });
+  await S.ch.s1.startNotifications();
+  if (S.ch.cmd) { S.ch.cmd.addEventListener('characteristicvaluechanged', onCommand); await S.ch.cmd.startNotifications(); }
+  const name = dev.name || ''; const m = name.match(/^(\d{6,})\s*(.*)$/);
+  S.info = { name: name || 'ETI thermometer', serial: m ? m[1] : '' };
+  try {
+    const bl = await (await server.getPrimaryService('battery_service')).getCharacteristic('battery_level');
+    S.batt = (await bl.readValue()).getUint8(0);
+    bl.addEventListener('characteristicvaluechanged', ev => { S.batt = ev.target.value.getUint8(0); renderProbe(); });
+    try { await bl.startNotifications(); } catch {}
+  } catch {}
+  if (S.ch.inst) { try { S.interval = (await S.ch.inst.readValue()).getUint16(1, true); } catch {} }
+  S.mode = 'ble'; S.modalState = 'reading'; renderProbe();
+  try { const c = parseReading(await S.ch.s1.readValue()); if (c !== null) { S.lastC = c; S.lastAt = new Date(); modalReadingUpdate(); } } catch {}
+  await pushToProbe();
+  try { S.wake = await navigator.wakeLock?.request('screen'); } catch {}
+  toast(`Connected to ${S.info.name}`);
+}
+function errMsg(err){
+  const m = (err && err.message) || String(err);
+  if (/adapter|globally disabled/i.test(m)) return 'Turn on Bluetooth, then try again.';
+  if (/permission|not allowed|denied/i.test(m)) return 'Chrome needs Bluetooth permission. Allow "Nearby devices" and try again.';
+  if (/not an ETI/.test(m)) return m;
+  if (/GATT|connect/i.test(m)) return "Couldn't connect. Make sure the probe is on and no other app is using it.";
+  return m;
+}
+async function useDevice(dev){
+  if (S.device && S.device !== dev && S.device.gatt.connected) S.device.gatt.disconnect();
+  S.device = dev;
+  dev.addEventListener('gattserverdisconnected', () => {
+    if (S.device !== dev || S.mode === 'none') return;
+    S.mode = 'lost'; S.pending = null; renderProbe(); toast('Thermometer disconnected');
+  });
+  try { await setupGatt(); }
+  catch (err) { console.warn(err); S.mode = 'lost'; S.modalState = 'choose'; renderProbe(); toast(errMsg(err)); }
+}
+async function connect(all = false){
+  if (S.mode === 'sim') stopSim();
+  let dev;
+  try {
+    const p = all ? navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: OPT_SVCS })
+                  : navigator.bluetooth.requestDevice({ filters: [{ manufacturerData: [{ companyIdentifier: ETI_COMPANY }] }], optionalServices: OPT_SVCS });
+    S.mode = 'connecting'; renderProbe();
+    dev = await p;
+  } catch (err) {
+    S.mode = S.device ? 'lost' : 'none'; S.modalState = 'choose'; renderProbe();
+    if (err.name === 'TypeError' && !all) return connect(true);
+    if (!/cancel/i.test(err.message)) toast(errMsg(err));
+    return;
+  }
+  await useDevice(dev);
+}
+async function reconnect(){ try { await setupGatt(); } catch (err) { S.mode = 'lost'; S.modalState = 'choose'; renderProbe(); toast(errMsg(err)); } }
+function disconnect(){
+  const d = S.device; S.mode = 'none'; S.batt = null; S.info = {}; S.enhanced = false; S.device = null;
+  if (d && d.gatt.connected) d.gatt.disconnect();
+  try { S.wake?.release(); } catch {}
+  renderProbe(); toast('Thermometer disconnected');
+}
+async function toggleLive(){
+  if (S.mode !== 'ble' || !S.ch.inst) return;
+  const want = S.interval ? 0 : 1;
+  try {
+    await gatt(async () => {
+      const cur = await S.ch.inst.readValue();
+      if (cur.getUint16(1, true) === want) return; // stored in flash: only write on change
+      const out = new DataView(cur.buffer.slice(cur.byteOffset, cur.byteOffset + cur.byteLength));
+      out.setUint16(1, want, true); await write(S.ch.inst, out.buffer);
+    });
+    S.interval = want; renderProbe(); toast(want ? 'Probe sends a reading every second' : 'Probe sends readings when its button is pressed');
+  } catch { toast("Couldn't change the probe setting"); }
+}
+
+// ================= simulator =================
+function startSim(){
+  if (S.mode === 'ble') disconnect();
+  S.mode = 'sim'; S.info = { name:'Simulated thermometer', serial:'' }; S.batt = null; S.modalState = 'reading';
+  S.simC = fToC(44);
+  const target = () => fToC(S.current && S.current.id === 12748 ? 43.6 : 37.2); // one room runs warm for the demo
+  const tick = () => { S.simC += (target() - S.simC) * 0.3 + (Math.random() - .5) * .08; onReading(S.simC); };
+  tick(); S.simTimer = setInterval(tick, 1000);
+  renderProbe();
+}
+function stopSim(){ clearInterval(S.simTimer); S.simTimer = null; S.mode = 'none'; S.info = {}; S.lastC = null; S.lastAt = null; renderProbe(); }
+
+// ================= events =================
+document.addEventListener('click', ev => {
+  const menuBtn = ev.target.closest('[data-menu]');
+  document.querySelectorAll('.dd-menu').forEach(m => { if (!menuBtn || m.id !== menuBtn.dataset.menu) m.hidden = true; });
+  if (menuBtn) { const m = $(menuBtn.dataset.menu); m.hidden = !m.hidden; return; }
+
+  const act = ev.target.closest('[data-act]');
+  if (act) {
+    const a = act.dataset.act;
+    if (a === 'connect') { S.modalOpen = false; connect(); }
+    else if (a === 'sim') startSim();
+    else if (a === 'stopsim') stopSim();
+    else if (a === 'disconnect') disconnect();
+    else if (a === 'identify') gatt(() => write(S.ch.cmd, u16(CMD.IDENTIFY))).catch(() => {});
+    else if (a === 'live') toggleLive();
+    else if (a === 'reset') { DATA = {}; saveData(); if (S.current) openSample(S.current.id, false); renderList(); toast('Demo data reset'); }
+    return;
+  }
+  const row = ev.target.closest('.srow'); if (row) { openSample(Number(row.dataset.id)); return; }
+  const now = ev.target.closest('[data-now]');
+  if (now) { S.draft[now.dataset.now] = localDT(new Date()); renderOptions(); return; }
+  if (ev.target.closest('#btnProbe')) { openModal(); return; }
+
+  const m = ev.target.closest('[data-m]');
+  if (m) {
+    const k = m.dataset.m;
+    if (k === 'cancel') closeModal();
+    else if (k === 'use') useReading();
+    else if (k === 'connect') { S.modalState = 'connecting'; renderModal(); connect(); }
+    else if (k === 'all') { S.modalState = 'connecting'; renderModal(); connect(true); }
+    else if (k === 'sim') { startSim(); renderModal(); }
+    return;
+  }
+  const tab = ev.target.closest('[data-tab]');
+  if (tab) { document.querySelectorAll('[data-tab]').forEach(t => t.classList.toggle('active', t === tab)); $('tabSamples').hidden = tab.dataset.tab !== 'samples'; $('tabRecipes').hidden = tab.dataset.tab !== 'recipes'; }
+});
+document.addEventListener('input', ev => {
+  const k = ev.target.dataset && ev.target.dataset.key; if (!k || !S.draft) return;
+  S.draft[k] = ev.target.value;
+  if (k === 'temp') S.draft.tempMeta = null;
+  const f = FIELDS.find(x => x.key === k); const el = $('opt_' + k);
+  el.classList.remove('saved', 'bad'); const st = optState(f); if (st) el.classList.add(st);
+});
+document.addEventListener('change', ev => { if (ev.target.id === 'o_temp') renderOptions(); });
+$('mClose').addEventListener('click', closeModal);
+$('modal').addEventListener('click', ev => { if (ev.target.id === 'modal') closeModal(); });
+$('btnSave').addEventListener('click', saveSample);
+$('btnDone').addEventListener('click', () => toast('Work order 2359 is still open'));
+$('woToggle').addEventListener('click', () => { const d = $('woDetails'); d.hidden = !d.hidden; $('woToggle').firstElementChild.className = 'fa ' + (d.hidden ? 'fa-plus-square' : 'fa-minus-square'); });
+window.addEventListener('popstate', ev => { if (ev.state && ev.state.sample) openSample(ev.state.sample, false); else showList(); });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && S.modalOpen) closeModal(); });
+
+// ================= init =================
+renderList(); renderProbe();
+history.replaceState(null, '', location.pathname);
+})();
+</script>
+</body>
+</html>
